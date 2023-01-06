@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 AS builder
 
 WORKDIR /app
 
@@ -13,6 +13,18 @@ RUN go mod download
 COPY . .
 
 RUN go build main.go
+
+
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y libgit2-1.1 && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/main .
 
 ENTRYPOINT ["./main", "/repo"]
 

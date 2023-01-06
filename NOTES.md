@@ -33,3 +33,11 @@
 - For example, deleting the `apt` cache shaves about 40MB from the total
   image size.
 
+### 5 - Multi-stage builds
+
+- Separate the build steps into its own stage. No need to ship your dev
+  dependencies!
+- Instead of installing `libgit2-dev`, we can just install the compiled
+  binary.
+- 10x reduction in image size. ~800MB -> ~80MB.
+
