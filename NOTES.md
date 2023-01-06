@@ -22,3 +22,14 @@
 - Especially important for ecosystems where a large number of dependencies
   is the norm, i.e. Node.
 
+### 4 - Consolidate system package manager commands
+
+- Each Docker command (i.e. `RUN`) spawns another layer.
+- Once a layer is created, it can't be removed from the image. This means
+  that if you create a file in one layer and delete it in a subsequent
+  layer, you're not actually going to save any space.
+- Running package manager commands together reduces layer overhead and
+  allows you to "tidy up" before the layer is committed.
+- For example, deleting the `apt` cache shaves about 40MB from the total
+  image size.
+
