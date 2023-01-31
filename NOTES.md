@@ -41,3 +41,14 @@
   binary.
 - 10x reduction in image size. ~800MB -> ~80MB.
 
+## Misc
+
+### Check the compressed size of an image
+
+```
+$ docker save <IMAGE> -o <IMAGE>.tar
+$ gzip <IMAGE>.tar
+
+$ ls -l --block-size=M
+```
+
