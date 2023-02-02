@@ -1,0 +1,183 @@
+#+TITLE: Slim your Docker images in less than a handful of steps
+
+* Today you will learn...
+- Four easy steps you can take to make your Docker images smaller and faster.
+- ...plus a few more tips to take home!
+* whoami
+- James Liu
+  - Email: james@liu.lol
+- Senior Software Engineer, Static Analysis @ GitLab
+  - Most of what my team works on is open source!
+  - Just Google "Static Analysis Group GitLab"
+- My background is in developer tooling and backend web development
+  - Mostly Go and Ruby these days
+* Demo
+** Naive Dockerfile
+#+name: dockerfile_naive
+#+begin_src dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+COPY . .
+
+RUN apt update
+RUN apt upgrade -y
+RUN apt install -y ca-certificates
+RUN apt install -y libgit2-dev
+RUN apt install -y golang
+
+RUN go build main.go
+
+RUN apt remove -y ca-certificates
+RUN apt remove -y golang
+
+ENTRYPOINT ["./main", "/repo"]
+#+end_src
+
+#+begin_src bash :dir . :noweb yes
+cat <<EOF >app/Dockerfile
+<<dockerfile_naive>>
+EOF
+#+end_src
+
+** Order from least to most-changing
+#+name: dockerfile_ordered
+#+begin_src dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+RUN apt update
+RUN apt upgrade -y
+RUN apt install -y ca-certificates
+RUN apt install -y libgit2-dev
+RUN apt install -y golang
+
+COPY . .
+
+RUN go build main.go
+
+RUN apt remove -y ca-certificates
+RUN apt remove -y golang
+
+ENTRYPOINT ["./main", "/repo"]
+#+end_src
+
+#+begin_src bash :dir . :noweb yes
+cat <<EOF >app/Dockerfile
+<<dockerfile_ordered>>
+EOF
+#+end_src
+
+** Explicitly download your dependencies
+#+name: dockerfile_explicitdeps
+#+begin_src dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+RUN apt update
+RUN apt upgrade -y
+RUN apt install -y ca-certificates
+RUN apt install -y libgit2-dev
+RUN apt install -y golang
+
+COPY go.mod go.sum .
+RUN go mod download
+
+COPY . .
+
+RUN go build main.go
+
+RUN apt remove -y ca-certificates
+RUN apt remove -y golang
+
+ENTRYPOINT ["./main", "/repo"]
+#+end_src
+
+#+begin_src bash :dir . :noweb yes
+cat <<EOF >app/Dockerfile
+<<dockerfile_explicitdeps>>
+EOF
+#+end_src
+
+** Streamline package manager commands
+#+name: dockerfile_packagemanager
+#+begin_src dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y ca-certificates libgit2-dev golang && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY go.mod go.sum .
+RUN go mod download
+
+COPY . .
+
+RUN go build main.go
+
+ENTRYPOINT ["./main", "/repo"]
+#+end_src
+
+#+begin_src bash :dir . :noweb yes
+cat <<EOF >app/Dockerfile
+<<dockerfile_packagemanager>>
+EOF
+#+end_src
+
+** Multi-stage builds
+#+name: dockerfile_multistage
+#+begin_src dockerfile
+FROM ubuntu:22.04 AS builder
+
+WORKDIR /app
+
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y ca-certificates libgit2-dev golang && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY go.mod go.sum .
+RUN go mod download
+
+COPY . .
+
+RUN go build main.go
+
+
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y libgit2-1.1 && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/main .
+
+ENTRYPOINT ["./main", "/repo"]
+#+end_src
+
+#+begin_src bash :dir . :noweb yes
+cat <<EOF >app/Dockerfile
+<<dockerfile_multistage>>
+EOF
+#+end_src
+
+* More things you can try!
+** =.dockerignore=
+- Exclude project files that don't need to be shipped.
+- Tests, development assets etc.
+** Alpine Linux
+- Lightweight Linux distribution built around musl libc and busybox.
+- ~5MB compressed base image.
+- Some oddities with applications that require glibc, but generally
+** Distroless images
+- No shell, package managers, or utilities.
+- ~2MB compressed base image.
