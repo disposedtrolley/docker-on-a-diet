@@ -3,10 +3,11 @@
 * Today you will learn...
 - Four easy steps you can take to make your Docker images smaller and faster.
 - ...plus a few more tips to take home!
-* whoami
+* $ whoami
 - James Liu
   - Email: james@liu.lol
 - Senior Software Engineer, Static Analysis @ GitLab
+  - SAST, Secret Detection, IaC, Code Quality
   - Most of what my team works on is open source!
   - Just Google "Static Analysis Group GitLab" if you want to learn more.
 - My background is in developer tooling and backend web development
