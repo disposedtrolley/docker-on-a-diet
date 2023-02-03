@@ -8,7 +8,7 @@
   - Email: james@liu.lol
 - Senior Software Engineer, Static Analysis @ GitLab
   - Most of what my team works on is open source!
-  - Just Google "Static Analysis Group GitLab"
+  - Just Google "Static Analysis Group GitLab" if you want to learn more.
 - My background is in developer tooling and backend web development
   - Mostly Go and Ruby these days
 * Demo
@@ -35,12 +35,6 @@ RUN apt remove -y golang
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
-<<dockerfile_naive>>
-EOF
-#+end_src
-
 ** Order from least to most-changing
 #+name: dockerfile_ordered
 #+begin_src dockerfile
@@ -64,10 +58,18 @@ RUN apt remove -y golang
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
+#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
+
+cat <<EOF >/tmp/Dockerfile.prev
+<<dockerfile_naive>>
+EOF
+
+cat <<EOF >/tmp/Dockerfile.new
 <<dockerfile_ordered>>
 EOF
+
+diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
+rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 #+end_src
 
 ** Explicitly download your dependencies
@@ -96,10 +98,18 @@ RUN apt remove -y golang
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
+#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
+
+cat <<EOF >/tmp/Dockerfile.prev
+<<dockerfile_ordered>>
+EOF
+
+cat <<EOF >/tmp/Dockerfile.new
 <<dockerfile_explicitdeps>>
 EOF
+
+diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
+rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 #+end_src
 
 ** Streamline package manager commands
@@ -124,10 +134,18 @@ RUN go build main.go
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
+#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
+
+cat <<EOF >/tmp/Dockerfile.prev
+<<dockerfile_explicitdeps>>
+EOF
+
+cat <<EOF >/tmp/Dockerfile.new
 <<dockerfile_packagemanager>>
 EOF
+
+diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
+rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 #+end_src
 
 ** Multi-stage builds
@@ -164,10 +182,18 @@ COPY --from=builder /app/main .
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
+#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
+
+cat <<EOF >/tmp/Dockerfile.prev
+<<dockerfile_packagemanager>>
+EOF
+
+cat <<EOF >/tmp/Dockerfile.new
 <<dockerfile_multistage>>
 EOF
+
+diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
+rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 #+end_src
 
 * More things you can try!
