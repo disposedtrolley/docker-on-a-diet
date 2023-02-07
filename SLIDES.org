@@ -1,7 +1,7 @@
 #+TITLE: Slim your Docker images in less than a handful of steps
 
 * Today you will learn...
-- Four easy steps you can take to make your Docker images smaller and faster.
+- A few easy steps you can take to make your Docker images smaller and faster.
 - ...plus a few more tips to take home!
 * $ whoami
 - James Liu
@@ -13,7 +13,7 @@
 - My background is in developer tooling and backend web development
   - Mostly Go and Ruby these days
 * Demo
-** Program
+** Example app
 ** Naive Dockerfile
 #+name: dockerfile_naive
 #+begin_src dockerfile
@@ -43,98 +43,11 @@ cat <<EOF >app/Dockerfile
 EOF
 #+end_src
 
-** Order from least to most-changing
-#+name: dockerfile_ordered
-#+begin_src dockerfile
-FROM ubuntu:22.04
-
-WORKDIR /app
-
-RUN apt update
-RUN apt upgrade -y
-RUN apt install -y ca-certificates
-RUN apt install -y libgit2-dev
-RUN apt install -y golang
-
-COPY . .
-
-RUN go build main.go
-
-RUN apt remove -y ca-certificates
-RUN apt remove -y golang
-
-ENTRYPOINT ["./main", "/repo"]
-#+end_src
-
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
-<<dockerfile_ordered>>
-EOF
-#+end_src
-
-*** Diff
-#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
-
-cat <<EOF >/tmp/Dockerfile.prev
-<<dockerfile_naive>>
-EOF
-
-cat <<EOF >/tmp/Dockerfile.new
-<<dockerfile_ordered>>
-EOF
-
-diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
-rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
-#+end_src
-
-** Explicitly download your dependencies
-#+name: dockerfile_explicitdeps
-#+begin_src dockerfile
-FROM ubuntu:22.04
-
-WORKDIR /app
-
-RUN apt update
-RUN apt upgrade -y
-RUN apt install -y ca-certificates
-RUN apt install -y libgit2-dev
-RUN apt install -y golang
-
-COPY go.mod go.sum .
-RUN go mod download
-
-COPY . .
-
-RUN go build main.go
-
-RUN apt remove -y ca-certificates
-RUN apt remove -y golang
-
-ENTRYPOINT ["./main", "/repo"]
-#+end_src
-
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
-<<dockerfile_explicitdeps>>
-EOF
-#+end_src
-
-*** Diff
-#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
-
-cat <<EOF >/tmp/Dockerfile.prev
-<<dockerfile_ordered>>
-EOF
-
-cat <<EOF >/tmp/Dockerfile.new
-<<dockerfile_explicitdeps>>
-EOF
-
-diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
-rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
-#+end_src
-
-** Streamline package manager commands
+** What's in a Docker image?
+- A Linux root filesystem
+- ...overlaid with _your stuff_
+- You can explore them with [[https://github.com/wagoodman/dive][Dive]]!
+** A _lot_ faster and a little smaller
 #+name: dockerfile_packagemanager
 #+begin_src dockerfile
 FROM ubuntu:22.04
@@ -166,7 +79,7 @@ EOF
 #+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
 
 cat <<EOF >/tmp/Dockerfile.prev
-<<dockerfile_explicitdeps>>
+<<dockerfile_naive>>
 EOF
 
 cat <<EOF >/tmp/Dockerfile.new
@@ -177,7 +90,7 @@ diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
 rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 #+end_src
 
-** Multi-stage builds
+** A _lot_ faster and a _lot_ smaller
 #+name: dockerfile_multistage
 #+begin_src dockerfile
 FROM ubuntu:22.04 AS builder
@@ -239,7 +152,7 @@ rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 ** Alpine Linux
 - Lightweight Linux distribution built around musl libc and busybox.
 - ~5MB compressed base image.
-- Some oddities with applications that require glibc, but generally
+- Some oddities with applications that require glibc, but generally good compatibility.
 ** Distroless images
 - No shell, package managers, or utilities.
 - ~2MB compressed base image.

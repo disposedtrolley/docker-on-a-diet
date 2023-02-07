@@ -1,0 +1,52 @@
+* Today you will learn
+- Hello! Today we're going to talk about Docker images!
+- **Just a show of hands, who's had to deal with bloated Docker images that take forever to build and pull?**
+  - Well you've come to the right talk, because today we're going to make a Docker image 10x smaller.
+* $ whoami
+- A little bit about myself. My name's James and I'm a senior software engineer at GitLab, working in the Static Analysis team.
+- We maintain a lot of Docker images that are constantly being pulled in CI/CD pipelines to run security scanning on large codebases.
+- Most of what my team does is open source - just google "Static Analysis Group Gitlab" if you want to learn more.
+- My background is in developer tooling and server-side web development. I focus mainly on Go and Ruby these days, though I'm only really good at Go.
+- With that out of the way, we'll jump straight into a demo!
+* Demo
+** Example app
+- I've prepared a simple example app that's designed to showcase some of the optimisations we'll be doing today.
+- Here's the app: you run it against a Git repository on your computer, and it'll print out the commit messages for the branch you've got checked out. It's kinda like =git log= but not as good.
+- *SHOW SOURCE*
+- The app uses the Go bindings for the =libgit2= library to query the plumbing of Git. Because they're bindings, we need to install the =libgit2= system package in order for it to work.
+** Naive Dockerfile
+- Here's a pretty basic Dockerfile.
+  - We're using Ubuntu as the base image and installing some system packages, including =libgit2= and the Go toolchain.
+  - We then copy over our source code and compile the binary.
+- I built this Dockerfile earlier and saved it to a =.tar= image, and it comes in at almost 900MB! What's taking up all of the space?
+** What's in a Docker image?
+- Docker images contain a root Linux filesystem inherited from a base image, which then gets overlaid with whatever you specify in your Dockerfile.
+- Each layer builds on top of the last, and is immutable. Every command in a Dockerfile creates a new layer.
+  - Let's take a quick look inside a Docker image with the help of a tool called =dive=.
+  - **Who's heard of or used dive before?** It's a really handy tool.
+- *DIVE DEMO*
+  - Here's Dive. It's split into two panes. The one on the left lists all of the layers in your image, and the right shows you the filesystem tree at each layer.
+  - You can see that system packages contribute a lot to the overall image size.
+  - The last two layers illustrate the crux of the problem. We tried to be smart by removing packages we no longer need, but instead of freeing up space we actually used more! This circles back to the fact that layers are immutable.
+  - Now that we know what's causing the bloat, we can try and fix it!
+** A _lot_ faster and a little smaller
+- This is a slightly better Dockerfile that's a lot faster to build and a little bit smaller to ship.
+- I consolidated all of the system package manager commands into a single =RUN= instruction, with the addition of removing the package cache we no longer need.
+- I copy the Go manifest files and explicitly fetch dependencies before copying the rest of my source code. Since you change your code more often than your dependencies, this allows =docker build= to cache the previous layers.
+- Finally, I copy my source code at the very last minute. This again allows Docker to cache as much as possible. When we change the source code, the only thing =docker build= will do is compile the code.
+- *DIVE DEMO*
+** A _lot_ faster and a _lot_ smaller
+- The last thing we're gonna look at is a multi-stage Dockerfile. **Who's worked with these before?**
+- Multi-stage Dockerfiles let you separate your development and production dependencies. When you're developing, you might need a compiler toolchain or dev libraries. Your customers, however, likely don't.
+- The first part of this Dockerfile is pretty much the same, but I've added another =FROM= instruction which marks the beginning of another stage. The second stage sets up a smaller image with just the dependencies that are needed for runtime.
+- Let's fire up Dive to see what kind of a difference that made!
+- *DIVE DEMO*
+  - Wow! That started much faster too.
+  - Look at that -- 88MB uncompressed! That's a 10x savings on the final image.
+  - We're only shipping what the user absolutely needs at runtime.
+* More things you can try
+- So that concludes the demo. Before we wrap up, I'd like to leave you with a few things you can try at home.
+- Firstly, you can define a =.dockerignore= file (it works like a =.gitignore=) to exclude files from being sent to the Docker builder or being added with a =COPY= instruction. This is useful for excluding tests and large assets that you don't need to ship.
+- In the demo, we used Ubuntu as the base image. There are smaller base images available like Alpine which ship a different shell, C library, and utilities. It's only 5MB compressed and generally has good compatibility. **Has anyone used Alpine before?**
+- There are also distroless images. **Has anyone tried these before?**
+- Which are designed to run your application and your application alone. It doesn't come with an interactive shell, package managers, or preinstalled utilities. It's pretty much the bare minimum of a functioning Linux filesystem, coming in at 2MB compressed.
