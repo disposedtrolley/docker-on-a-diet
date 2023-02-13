@@ -14,6 +14,9 @@
   - Mostly Go and Ruby these days
 * Demo
 ** Example app
+#+begin_src sh
+./main ~/repos/linux-stable | less
+#+end_src
 ** Naive Dockerfile
 #+name: dockerfile_naive
 #+begin_src dockerfile
@@ -37,16 +40,15 @@ RUN apt remove -y golang
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
-<<dockerfile_naive>>
-EOF
-#+end_src
-
 ** What's in a Docker image?
 - A Linux root filesystem
 - ...overlaid with _your stuff_
 - You can explore them with [[https://github.com/wagoodman/dive][Dive]]!
+*** Dive
+#+begin_src sh
+docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive:latest demo:1-naive
+#+end_src
+
 ** A _lot_ faster and a little smaller
 #+name: dockerfile_packagemanager
 #+begin_src dockerfile
@@ -69,12 +71,10 @@ RUN go build main.go
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
-<<dockerfile_packagemanager>>
-EOF
+*** Dive
+#+begin_src sh
+docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive:latest demo:4-packagemanager
 #+end_src
-
 *** Diff
 #+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
 
@@ -124,12 +124,6 @@ COPY --from=builder /app/main .
 ENTRYPOINT ["./main", "/repo"]
 #+end_src
 
-#+begin_src bash :dir . :noweb yes
-cat <<EOF >app/Dockerfile
-<<dockerfile_multistage>>
-EOF
-#+end_src
-
 *** Diff
 #+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
 
@@ -143,6 +137,11 @@ EOF
 
 diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
 rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
+#+end_src
+
+*** Dive
+#+begin_src sh
+docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive:latest demo:5-multistage
 #+end_src
 
 * More things you can try!
