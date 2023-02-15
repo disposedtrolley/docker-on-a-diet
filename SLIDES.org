@@ -7,7 +7,6 @@
 - James Liu
   - Email: james@liu.lol
 - Senior Software Engineer, Static Analysis @ GitLab
-  - SAST, Secret Detection, IaC, Code Quality
   - Most of what my team works on is open source!
   - Just Google "Static Analysis Group GitLab" if you want to learn more.
 - My background is in developer tooling and backend web development
@@ -15,7 +14,7 @@
 * Demo
 ** Example app
 #+begin_src sh
-./main ~/repos/linux-stable | less
+./main ~/code/gl/gitlab | less
 #+end_src
 ** Naive Dockerfile
 #+name: dockerfile_naive
@@ -75,21 +74,6 @@ ENTRYPOINT ["./main", "/repo"]
 #+begin_src sh
 docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive:latest demo:4-packagemanager
 #+end_src
-*** Diff
-#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
-
-cat <<EOF >/tmp/Dockerfile.prev
-<<dockerfile_naive>>
-EOF
-
-cat <<EOF >/tmp/Dockerfile.new
-<<dockerfile_packagemanager>>
-EOF
-
-diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
-rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
-#+end_src
-
 ** A _lot_ faster and a _lot_ smaller
 #+name: dockerfile_multistage
 #+begin_src dockerfile
@@ -122,21 +106,6 @@ RUN apt update && \
 COPY --from=builder /app/main .
 
 ENTRYPOINT ["./main", "/repo"]
-#+end_src
-
-*** Diff
-#+begin_src sh :noweb yes :exports results :results verbatim :wrap src diff
-
-cat <<EOF >/tmp/Dockerfile.prev
-<<dockerfile_packagemanager>>
-EOF
-
-cat <<EOF >/tmp/Dockerfile.new
-<<dockerfile_multistage>>
-EOF
-
-diff -u /tmp/Dockerfile.prev /tmp/Dockerfile.new
-rm -f /tmp/Dockerfile.prev /tmp/Dockerfile.new
 #+end_src
 
 *** Dive
